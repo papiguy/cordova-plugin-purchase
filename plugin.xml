@@ -37,7 +37,8 @@ SOFTWARE.
     <repo>https://github.com/j3k0/cordova-plugin-purchase.git</repo>
     <issue>https://github.com/j3k0/cordova-plugin-purchase/issues</issue>
 
-	<license>MIT</license>
+    <license>MIT</license>
+    <preference name="GOOGLE_BILLING_ANDROID_SDK_VERSION" default="6.0.0"/>
     <keywords>cordova,phonegap,purchase,purchases,storekit,billing,ios,android,play,appstore,windows,osx,macos</keywords>
 
     <!-- ios -->
@@ -124,7 +125,7 @@ SOFTWARE.
 
       <!-- To ensure we're using the latest version, see here:
         https://developer.android.com/google/play/billing/billing_library_releases_notes -->
-      <framework src="com.android.billingclient:billing:5.0.0" />
+      <framework src="com.android.billingclient:billing:$GOOGLE_BILLING_ANDROID_SDK_VERSION" />
       <source-file src="src/android/cc/fovea/PurchasePlugin.java" target-dir="src/cc/fovea" />
       <source-file src="src/android/cc/fovea/Constants.java" target-dir="src/cc/fovea" />
     </platform>
