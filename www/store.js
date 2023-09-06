@@ -4596,7 +4596,7 @@ var CdvPurchase;
 
                     const iabLoaded = (validProducts) => {
                         this.log.debug("Loaded: " + JSON.stringify(validProducts));
-                        if (!(validProducts instanceof Array) {
+                        if (!(validProducts instanceof Array)) {
                             errHandler('Wrong response type! validProducts=' + JSON.stringify(validProducts))
                             return
                         }
