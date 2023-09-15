@@ -1,3 +1,4 @@
+/// <reference path="utils/compatibility.ts" />
 /// <reference path="validator/validator.ts" />
 /// <reference path="log.ts" />
 /// <reference path="internal/adapters.ts" />
@@ -24,7 +25,7 @@ namespace CdvPurchase {
     /**
      * Current release number of the plugin.
      */
-    export const PLUGIN_VERSION = '13.4.2';
+    export const PLUGIN_VERSION = '13.8.0';
 
     /**
      * Entry class of the plugin.
@@ -147,11 +148,20 @@ namespace CdvPurchase {
         /** Callbacks when a transaction has been finished */
         private finishedCallbacks = new Internal.Callbacks<Transaction>(this.log, 'finished()');
 
+        /** Callbacks when a transaction is pending */
+        private pendingCallbacks = new Internal.Callbacks<Transaction>(this.log, 'pending()');
+
         /** Callbacks when a receipt has been validated */
         private verifiedCallbacks = new Internal.Callbacks<VerifiedReceipt>(this.log, 'verified()');
 
         /** Callbacks when a receipt has been validated */
         private unverifiedCallbacks = new Internal.Callbacks<UnverifiedReceipt>(this.log, 'unverified()');
+
+        /** Callbacks when all receipts have been loaded */
+        private receiptsReadyCallbacks = new Internal.Callbacks<void>(this.log, 'receiptsReady()', true);
+
+        /** Callbacks when all receipts have been verified */
+        private receiptsVerifiedCallbacks = new Internal.Callbacks<void>(this.log, 'receiptsVerified()', true);
 
         /** Callbacks for errors */
         private errorCallbacks = new Internal.Callbacks<IError>(this.log, 'error()');
@@ -163,15 +173,16 @@ namespace CdvPurchase {
         private transactionStateMonitors: Internal.TransactionStateMonitors;
 
         constructor() {
+            const store = this;
             this.listener = new Internal.StoreAdapterListener({
                 updatedCallbacks: this.updatedCallbacks,
                 updatedReceiptCallbacks: this.updatedReceiptsCallbacks,
                 approvedCallbacks: this.approvedCallbacks,
                 finishedCallbacks: this.finishedCallbacks,
-            });
+                pendingCallbacks: this.pendingCallbacks,
+                receiptsReadyCallbacks: this.receiptsReadyCallbacks,
+            }, this.log);
             this.transactionStateMonitors = new Internal.TransactionStateMonitors(this.when());
-
-            const store = this;
             this._validator = new Internal.Validator({
                 adapters: this.adapters,
                 getApplicationUsername: this.getApplicationUsername.bind(this),
@@ -182,6 +193,16 @@ namespace CdvPurchase {
                 unverifiedCallbacks: this.unverifiedCallbacks,
                 finish: (receipt: VerifiedReceipt) => this.finish(receipt),
             }, this.log);
+            new Internal.ReceiptsMonitor({
+                hasLocalReceipts: () => this.localReceipts.length > 0,
+                hasValidator: () => !!this.validator,
+                numValidationRequests: () => this._validator.numRequests,
+                numValidationResponses: () => this._validator.numResponses,
+                off: this.off.bind(this),
+                when: this.when.bind(this),
+                receiptsVerified: () => { store.receiptsVerifiedCallbacks.trigger(); },
+                log: this.log,
+            }).launch();
         }
 
         /**
@@ -203,8 +224,14 @@ namespace CdvPurchase {
          *   }]);
          */
         register(product: IRegisterProduct | IRegisterProduct[]) {
-            this.registeredProducts.add(product);
+            const errors = this.registeredProducts.add(product);
+            errors.forEach(error => {
+                store.errorCallbacks.trigger(error);
+                this.log.error(error);
+            });
         }
+
+        private initializedHasBeenCalled = false;
 
         /**
          * Call to initialize the in-app purchase plugin.
@@ -212,7 +239,13 @@ namespace CdvPurchase {
          * @param platforms - List of payment platforms to initialize, default to Store.defaultPlatform().
          */
         async initialize(platforms: (Platform | PlatformWithOptions)[] = [this.defaultPlatform()]): Promise<IError[]> {
+            if (this.initializedHasBeenCalled) {
+                this.log.warn('store.initialized() has been called already.');
+                return [];
+            }
             this.log.info('initialize()');
+            this.initializedHasBeenCalled = true;
+            this.lastUpdate = +new Date();
             const store = this;
             const ret = this.adapters.initialize(platforms, {
                 error: this.triggerError.bind(this),
@@ -229,7 +262,10 @@ namespace CdvPurchase {
                     verify: this.verify.bind(this),
                 },
             });
-            ret.then(() => this._readyCallbacks.trigger());
+            ret.then(() => {
+                this._readyCallbacks.trigger();
+                this.listener.setSupportedPlatforms(this.adapters.list.filter(a => a.isSupported).map(a => a.id));
+            });
             return ret;
         }
 
@@ -240,22 +276,47 @@ namespace CdvPurchase {
             throw new Error("use store.initialize() or store.update()");
         }
 
+        /** Stores the last time the store was updated (or initialized), to skip calls in quick succession. */
+        private lastUpdate: number = 0;
+
+        /**
+         * Avoid invoking store.update() if the most recent call occurred within this specific number of milliseconds.
+         */
+        minTimeBetweenUpdates: number = 600000;
+
         /**
          * Call to refresh the price of products and status of purchases.
          */
         async update() {
             this.log.info('update()');
+            if (!this._readyCallbacks.isReady) {
+                this.log.warn('Do not call store.update() at startup! It is meant to reload the price of products (if needed) long after initialization.');
+                return;
+            }
+            const now = +new Date();
+            if (this.lastUpdate > now - this.minTimeBetweenUpdates) {
+                this.log.info('Skipping store.update() as the last call occurred less than store.minTimeBetweenUpdates millis ago.');
+                return;
+            }
+            this.lastUpdate = now;
             // Load products metadata
             for (const registration of this.registeredProducts.byPlatform()) {
-                const products = await this.adapters.findReady(registration.platform)?.load(registration.products);
+                const products = await this.adapters.findReady(registration.platform)?.loadProducts(registration.products);
                 products?.forEach(p => {
                     if (p instanceof Product) this.updatedCallbacks.trigger(p);
                 });
             }
         }
 
-        /** Register a callback to be called when the plugin is ready. */
+        /**
+         * Register a callback to be called when the plugin is ready.
+         *
+         * This happens when all the platforms are initialized and their products loaded.
+         */
         ready(cb: Callback<void>): void { this._readyCallbacks.add(cb); }
+
+        /** true if the plugin is initialized and ready */
+        get isReady(): boolean { return this._readyCallbacks.isReady; }
 
         /**
          * Setup events listener.
@@ -273,9 +334,12 @@ namespace CdvPurchase {
                 updated: (cb: Callback<Product | Receipt>) => (this.updatedCallbacks.push(cb), this.updatedReceiptsCallbacks.push(cb), ret),
                 // owned: (cb: Callback<Product>) => (this.ownedCallbacks.push(cb), ret),
                 approved: (cb: Callback<Transaction>) => (this.approvedCallbacks.push(cb), ret),
+                pending: (cb: Callback<Transaction>) => (this.pendingCallbacks.push(cb), ret),
                 finished: (cb: Callback<Transaction>) => (this.finishedCallbacks.push(cb), ret),
                 verified: (cb: Callback<VerifiedReceipt>) => (this.verifiedCallbacks.push(cb), ret),
                 unverified: (cb: Callback<UnverifiedReceipt>) => (this.unverifiedCallbacks.push(cb), ret),
+                receiptsReady: (cb: Callback<void>) => (this.receiptsReadyCallbacks.push(cb), ret),
+                receiptsVerified: (cb: Callback<void>) => (this.receiptsVerifiedCallbacks.push(cb), ret),
             };
             return ret;
         }
@@ -288,7 +352,11 @@ namespace CdvPurchase {
             this.updatedReceiptsCallbacks.remove(callback as any);
             this.approvedCallbacks.remove(callback as any);
             this.finishedCallbacks.remove(callback as any);
+            this.pendingCallbacks.remove(callback as any);
             this.verifiedCallbacks.remove(callback as any);
+            this.unverifiedCallbacks.remove(callback as any);
+            this.receiptsReadyCallbacks.remove(callback as any);
+            this.receiptsVerifiedCallbacks.remove(callback as any);
             this.errorCallbacks.remove(callback as any);
             this._readyCallbacks.remove(callback as any);
         }

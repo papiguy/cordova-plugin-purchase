@@ -17,13 +17,10 @@ Adapter for a payment or in-app purchase platform
 ### Properties
 
 - [id](CdvPurchase.Adapter.md#id)
-- [name](CdvPurchase.Adapter.md#name)
-- [ready](CdvPurchase.Adapter.md#ready)
-
-### Accessors
-
 - [isSupported](CdvPurchase.Adapter.md#issupported)
+- [name](CdvPurchase.Adapter.md#name)
 - [products](CdvPurchase.Adapter.md#products)
+- [ready](CdvPurchase.Adapter.md#ready)
 - [receipts](CdvPurchase.Adapter.md#receipts)
 
 ### Methods
@@ -32,7 +29,8 @@ Adapter for a payment or in-app purchase platform
 - [finish](CdvPurchase.Adapter.md#finish)
 - [handleReceiptValidationResponse](CdvPurchase.Adapter.md#handlereceiptvalidationresponse)
 - [initialize](CdvPurchase.Adapter.md#initialize)
-- [load](CdvPurchase.Adapter.md#load)
+- [loadProducts](CdvPurchase.Adapter.md#loadproducts)
+- [loadReceipts](CdvPurchase.Adapter.md#loadreceipts)
 - [manageBilling](CdvPurchase.Adapter.md#managebilling)
 - [manageSubscriptions](CdvPurchase.Adapter.md#managesubscriptions)
 - [order](CdvPurchase.Adapter.md#order)
@@ -50,11 +48,27 @@ Platform identifier
 
 ___
 
+### isSupported
+
+• **isSupported**: `boolean`
+
+Returns true is the adapter is supported on this device.
+
+___
+
 ### name
 
 • **name**: `string`
 
 Nice name for the adapter
+
+___
+
+### products
+
+• **products**: [`Product`](../classes/CdvPurchase.Product.md)[]
+
+List of products managed by the adapter.
 
 ___
 
@@ -66,41 +80,13 @@ true after the platform has been successfully initialized.
 
 The value is set by the "Adapters" class (which is responsible for initializing adapters).
 
-## Accessors
-
-### isSupported
-
-• `get` **isSupported**(): `boolean`
-
-Returns true is the adapter is supported on this device.
-
-#### Returns
-
-`boolean`
-
-___
-
-### products
-
-• `get` **products**(): [`Product`](../classes/CdvPurchase.Product.md)[]
-
-List of products managed by the adapter.
-
-#### Returns
-
-[`Product`](../classes/CdvPurchase.Product.md)[]
-
 ___
 
 ### receipts
 
-• `get` **receipts**(): [`Receipt`](../classes/CdvPurchase.Receipt.md)[]
+• **receipts**: [`Receipt`](../classes/CdvPurchase.Receipt.md)[]
 
 List of purchase receipts.
-
-#### Returns
-
-[`Receipt`](../classes/CdvPurchase.Receipt.md)[]
 
 ## Methods
 
@@ -180,9 +166,9 @@ In other case of a potentially recoverable error, the adapter will keep retrying
 
 ___
 
-### load
+### loadProducts
 
-▸ **load**(`products`): `Promise`<([`IError`](CdvPurchase.IError.md) \| [`Product`](../classes/CdvPurchase.Product.md))[]\>
+▸ **loadProducts**(`products`): `Promise`<([`IError`](CdvPurchase.IError.md) \| [`Product`](../classes/CdvPurchase.Product.md))[]\>
 
 Load product definitions from the platform.
 
@@ -195,6 +181,18 @@ Load product definitions from the platform.
 #### Returns
 
 `Promise`<([`IError`](CdvPurchase.IError.md) \| [`Product`](../classes/CdvPurchase.Product.md))[]\>
+
+___
+
+### loadReceipts
+
+▸ **loadReceipts**(): `Promise`<[`Receipt`](../classes/CdvPurchase.Receipt.md)[]\>
+
+Load the receipts
+
+#### Returns
+
+`Promise`<[`Receipt`](../classes/CdvPurchase.Receipt.md)[]\>
 
 ___
 

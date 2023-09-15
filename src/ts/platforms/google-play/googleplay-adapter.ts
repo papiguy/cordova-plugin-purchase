@@ -169,8 +169,19 @@ namespace CdvPurchase {
                 return {inAppSkus, subsSkus};
             }
 
+            /** @inheritdoc */
+            loadReceipts(): Promise<CdvPurchase.Receipt[]> {
+                return new Promise((resolve) => {
+                    // let's also refresh purchases
+                    this.getPurchases()
+                    .then(err => {
+                        resolve(this._receipts);
+                    });
+                });
+            }
+
             /** @inheritDoc */
-            load(products: IRegisterProduct[]): Promise<(GProduct | IError)[]> {
+            loadProducts(products: IRegisterProduct[]): Promise<(GProduct | IError)[]> {
 
                 return new Promise((resolve) => {
 
@@ -190,9 +201,6 @@ namespace CdvPurchase {
                             }
                         });
                         resolve(ret);
-
-                        // let's also refresh purchases
-                        this.getPurchases();
                     }
 
                     /** Start loading products */
@@ -280,6 +288,7 @@ namespace CdvPurchase {
             onSetPurchases(purchases: Bridge.Purchase[]): void {
                 this.log.debug("onSetPurchases: " + JSON.stringify(purchases));
                 this.onPurchasesUpdated(purchases);
+                this.context.listener.receiptsReady(Platform.GOOGLE_PLAY);
             }
 
             onPriceChangeConfirmationResult(result: "OK" | "UserCanceled" | "UnknownProduct"): void {
@@ -311,7 +320,7 @@ namespace CdvPurchase {
                         resolve(storeError(code ?? ErrorCode.UNKNOWN, message));
                     };
                     if (offer.productType === ProductType.PAID_SUBSCRIPTION) {
-                        const idAndToken = offer.id; // offerId contains the productId and token (format productId@offerToken)
+                        const idAndToken = 'token' in offer ? offer.productId + '@' + offer.token : offer.productId;
                         // find if the user already owns a product in the same group
                         const oldPurchaseToken = this.findOldPurchaseToken(offer.productId, offer.productGroup);
                         if (oldPurchaseToken) {

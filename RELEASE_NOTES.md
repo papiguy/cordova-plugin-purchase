@@ -1,6 +1,203 @@
 # Release Notes - Cordova Plugin Purchase
 
+## 13.8.0
+
+#### Upgrade to Google Play Billing library 5.2.1
+
+Adds access to offer and base plan identifiers.
+
+#### Handle validator answer with code `VALIDATOR_SUBSCRIPTION_EXPIRED`
+
+For backward compatibility, the validator also support responses with a 6778003
+error code (expired) when the validated transaction is expired.
+
+#### Fix: AppStore adapter should only return a localReceipt on iOS
+
+A dummy appstore receipt was listed on other platforms, this is fixed.
+
+#### Prevent various issues
+
+**Prevent double calls to approved callbacks**
+
+Make sure `.approved()` is only called once during a small time frame.
+
+**Skip quick successive calls to store.update()**
+
+The update will be performed only if `store.update()` or `store.initialize()`
+was called less than `store.minTimeBetweenUpdates` milliseconds.
+
+This make it safer to always call `store.update()` when entering the app's
+Store screen.
+
+**Block double callback registrations**
+
+Throw an error when attempting the re-register an existing callback for a given
+event handler. This is indicative of initialization code being run more than
+once.
+
+## 13.7.0
+
+#### Fix AppStore introctory prices
+
+Fix a regression with introctory prices on iOS. Unclear when this happened,
+according to Apple documentation, the "discounts" array should contain the
+introctory prices, but it turns out it does not anymore.
+
+#### Set ES6 as minimal javascript version
+
+Down from ES2015, for broader compatibility.
+
+#### Ensure verify() resolves even if there's no validator
+
+Some user do not specify a receipt validator but want to call
+"transaction.verify()" (for example app building frameworks).
+
+This changes makes sure the behavior gets back like it used to be in earlier
+versions of the plugin.
+
+## 13.6
+
+### 13.6.0
+
+#### Add store.when().receiptsReady(cb)
+
+The "receiptsReady" event is triggered only once, as soon as all platforms are
+done loading the receipts from the SDK.
+
+It can be used by applications that do not rely on receipt validation, in order
+to wait for the list of purchases reported by the native SDK to have been
+processed. For example, before running some code that check products ownership
+statuses at startup.
+
+```ts
+// at startup
+CdvPurchase.store.when().receiptsReady(() => {
+  console.log('All platforms have loaded their local receipts');
+  console.log('Feature X: ' + CdvPurchase.store.get('unlock-feature-x').owned);
+});
+```
+
+If the receipts have already been loaded before you setup this event handler,
+it will be called immediately.
+
+Users using a receipt validation server should rely on receiptsVerified()
+instead (see below).
+
+#### Add store.when().receiptsVerified(cb)
+
+Similarly to "receiptsReady", "receiptsVerified" is triggered only once: after
+all platforms have loaded their receipts and those have been verified by the
+receipt validation server.
+
+It can be used by applications that DO rely on receipt validation, in order to
+wait for all receipts to have been processed by the receipt validation service.
+A good use case is to encapsulate startup code that check products ownership
+status.
+
+```ts
+// at startup
+CdvPurchase.store.when().receiptsVerified(() => {
+  console.log('Receipts have been validated');
+  if (CdvPurchase.store.get('monthly').owned) {
+    openMainScreen();
+  }
+  else {
+    openSubscriptionScreen();
+  }
+});
+```
+
+If the receipts have already been verified before you setup this event handler,
+it will be called immediately.
+
+#### Add store.when().pending(cb)
+
+This event handler can be notified when a transaction enters the "PENDING"
+state, which happens when a user has "Ask to Buy" enabled, or in country where
+cash payment is an option.
+
+```ts
+store.when().pending(transaction => {
+  // Transaction is pending (waiting for parent approval, cash payment, ...)
+});
+```
+
+#### Remove autogrouping of products
+
+Starting at version 13.4.0, products were automatically added to the "default"
+group. This created more issues than it solved, because it let the plugin
+automatically try to replace potentially unrelated products.
+
+People willing to rely on automatic subscription replacement on Android should
+explicitely set those product's `group` property when registering them. Or
+should use the `oldPurchaseToken` property when making an order.
+
+**Examples:**
+
+```ts
+// Replace an old purchase when finalizing the new one on google play.
+store.order(product, {
+  googlePlay: {
+    oldPurchaseToken: 'abcdefghijkl',
+    prorationMode: CdvPurchase.GooglePlay.ProrationMode.IMMEDIATE_AND_CHARGE_PRORATED_PRICE,
+  }
+});
+
+// For those 2 subscription products, the plugin will automatically replace
+// the currently owned one (if any) when placing a new order.
+store.register([{
+  id: 'no_ads_yearly',
+  type: ProductType.PAID_SUBSCRIPTION,
+  platform: Platform.GOOGLE_PLAY,
+  group: 'noAds'
+}, {
+  id: 'no_ads_monthly',
+  type: ProductType.PAID_SUBSCRIPTION,
+  platform: Platform.GOOGLE_PLAY,
+  group: 'noAds'
+}]);
+```
+
+## 13.5
+
+### 13.5.0 - Add timeout to validation requests
+
+By default, the plugin will now setup a 20 seconds timeout for receipt validation requests.
+
+Receipt validation timeout can be detected using the following code:
+
+```ts
+CdvPurchase.store.when().unverified(function(response) {
+  if (response.payload.code === CdvPurchase.ErrorCode.COMMUNICATION) {
+    if (response.payload.status === CdvPurchase.Utils.Ajax.HTTP_REQUEST_TIMEOUT) {
+      // request timeout
+    }
+  }
+});
+```
+
+The value for timeout can be customized by specifying the validator this way:
+
+```ts
+CdvPurchase.store.validator = {
+  url: 'https://validator.iaptic.com',
+  timeout: 30000, // in milliseconds
+}
+```
+
 ## 13.4
+
+### 13.4.3 - Add HTTP status to receipt validation error payload
+
+Let the app know the HTTP status for a failed receipt validation call, in "response.payload.status".
+
+```ts
+CdvPurchase.store.when().unverified(response => {
+    if (response.payload.code === CdvPurchase.ErrorCode.COMMUNICATION) {
+        console.log("HTTP ERROR: " + response.payload.status);
+    }
+});
+```
 
 ### 13.4.2 - Fix "owned" status when validator returns "isExpired"
 

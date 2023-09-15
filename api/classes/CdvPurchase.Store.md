@@ -14,6 +14,7 @@ Entry class of the plugin.
 
 - [applicationUsername](CdvPurchase.Store.md#applicationusername)
 - [log](CdvPurchase.Store.md#log)
+- [minTimeBetweenUpdates](CdvPurchase.Store.md#mintimebetweenupdates)
 - [validator](CdvPurchase.Store.md#validator)
 - [validator\_privacy\_policy](CdvPurchase.Store.md#validator_privacy_policy)
 - [verbosity](CdvPurchase.Store.md#verbosity)
@@ -21,6 +22,7 @@ Entry class of the plugin.
 
 ### Accessors
 
+- [isReady](CdvPurchase.Store.md#isready)
 - [localReceipts](CdvPurchase.Store.md#localreceipts)
 - [localTransactions](CdvPurchase.Store.md#localtransactions)
 - [products](CdvPurchase.Store.md#products)
@@ -73,6 +75,14 @@ ___
 • **log**: [`Logger`](CdvPurchase.Logger.md)
 
 Logger
+
+___
+
+### minTimeBetweenUpdates
+
+• **minTimeBetweenUpdates**: `number` = `600000`
+
+Avoid invoking store.update() if the most recent call occurred within this specific number of milliseconds.
 
 ___
 
@@ -159,6 +169,18 @@ ___
 Version of the plugin currently installed.
 
 ## Accessors
+
+### isReady
+
+• `get` **isReady**(): `boolean`
+
+true if the plugin is initialized and ready
+
+#### Returns
+
+`boolean`
+
+___
 
 ### localReceipts
 
@@ -553,6 +575,8 @@ ___
 ▸ **ready**(`cb`): `void`
 
 Register a callback to be called when the plugin is ready.
+
+This happens when all the platforms are initialized and their products loaded.
 
 #### Parameters
 

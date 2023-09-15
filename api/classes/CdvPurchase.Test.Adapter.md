@@ -40,7 +40,8 @@ Test.TEST_PRODUCTS
 - [finish](CdvPurchase.Test.Adapter.md#finish)
 - [handleReceiptValidationResponse](CdvPurchase.Test.Adapter.md#handlereceiptvalidationresponse)
 - [initialize](CdvPurchase.Test.Adapter.md#initialize)
-- [load](CdvPurchase.Test.Adapter.md#load)
+- [loadProducts](CdvPurchase.Test.Adapter.md#loadproducts)
+- [loadReceipts](CdvPurchase.Test.Adapter.md#loadreceipts)
 - [manageBilling](CdvPurchase.Test.Adapter.md#managebilling)
 - [manageSubscriptions](CdvPurchase.Test.Adapter.md#managesubscriptions)
 - [order](CdvPurchase.Test.Adapter.md#order)
@@ -91,6 +92,8 @@ ___
 
 • **products**: [`Product`](CdvPurchase.Product.md)[] = `[]`
 
+List of products managed by the adapter.
+
 #### Implementation of
 
 [Adapter](../interfaces/CdvPurchase.Adapter.md).[products](../interfaces/CdvPurchase.Adapter.md#products)
@@ -115,6 +118,8 @@ ___
 
 • **receipts**: [`Receipt`](CdvPurchase.Receipt.md)[] = `[]`
 
+List of purchase receipts.
+
 #### Implementation of
 
 [Adapter](../interfaces/CdvPurchase.Adapter.md).[receipts](../interfaces/CdvPurchase.Adapter.md#receipts)
@@ -133,7 +138,7 @@ Returns true is the adapter is supported on this device.
 
 #### Implementation of
 
-CdvPurchase.Adapter.isSupported
+[Adapter](../interfaces/CdvPurchase.Adapter.md).[isSupported](../interfaces/CdvPurchase.Adapter.md#issupported)
 
 ## Methods
 
@@ -229,9 +234,9 @@ In other case of a potentially recoverable error, the adapter will keep retrying
 
 ___
 
-### load
+### loadProducts
 
-▸ **load**(`products`): `Promise`<([`IError`](../interfaces/CdvPurchase.IError.md) \| [`Product`](CdvPurchase.Product.md))[]\>
+▸ **loadProducts**(`products`): `Promise`<([`IError`](../interfaces/CdvPurchase.IError.md) \| [`Product`](CdvPurchase.Product.md))[]\>
 
 Load product definitions from the platform.
 
@@ -247,7 +252,23 @@ Load product definitions from the platform.
 
 #### Implementation of
 
-[Adapter](../interfaces/CdvPurchase.Adapter.md).[load](../interfaces/CdvPurchase.Adapter.md#load)
+[Adapter](../interfaces/CdvPurchase.Adapter.md).[loadProducts](../interfaces/CdvPurchase.Adapter.md#loadproducts)
+
+___
+
+### loadReceipts
+
+▸ **loadReceipts**(): `Promise`<[`Receipt`](CdvPurchase.Receipt.md)[]\>
+
+Load the receipts
+
+#### Returns
+
+`Promise`<[`Receipt`](CdvPurchase.Receipt.md)[]\>
+
+#### Implementation of
+
+[Adapter](../interfaces/CdvPurchase.Adapter.md).[loadReceipts](../interfaces/CdvPurchase.Adapter.md#loadreceipts)
 
 ___
 

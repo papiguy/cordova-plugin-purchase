@@ -40,7 +40,8 @@ Adapter for a payment or in-app purchase platform
 - [getSkusOf](CdvPurchase.GooglePlay.Adapter.md#getskusof)
 - [handleReceiptValidationResponse](CdvPurchase.GooglePlay.Adapter.md#handlereceiptvalidationresponse)
 - [initialize](CdvPurchase.GooglePlay.Adapter.md#initialize)
-- [load](CdvPurchase.GooglePlay.Adapter.md#load)
+- [loadProducts](CdvPurchase.GooglePlay.Adapter.md#loadproducts)
+- [loadReceipts](CdvPurchase.GooglePlay.Adapter.md#loadreceipts)
 - [manageBilling](CdvPurchase.GooglePlay.Adapter.md#managebilling)
 - [manageSubscriptions](CdvPurchase.GooglePlay.Adapter.md#managesubscriptions)
 - [onPriceChangeConfirmationResult](CdvPurchase.GooglePlay.Adapter.md#onpricechangeconfirmationresult)
@@ -151,7 +152,7 @@ Returns true on Android, the only platform supported by this adapter
 
 #### Implementation of
 
-CdvPurchase.Adapter.isSupported
+[Adapter](../interfaces/CdvPurchase.Adapter.md).[isSupported](../interfaces/CdvPurchase.Adapter.md#issupported)
 
 ___
 
@@ -167,7 +168,7 @@ List of products managed by the GooglePlay adapter
 
 #### Implementation of
 
-CdvPurchase.Adapter.products
+[Adapter](../interfaces/CdvPurchase.Adapter.md).[products](../interfaces/CdvPurchase.Adapter.md#products)
 
 ___
 
@@ -183,7 +184,7 @@ List of purchase receipts.
 
 #### Implementation of
 
-CdvPurchase.Adapter.receipts
+[Adapter](../interfaces/CdvPurchase.Adapter.md).[receipts](../interfaces/CdvPurchase.Adapter.md#receipts)
 
 ## Methods
 
@@ -335,9 +336,9 @@ In other case of a potentially recoverable error, the adapter will keep retrying
 
 ___
 
-### load
+### loadProducts
 
-▸ **load**(`products`): `Promise`<([`IError`](../interfaces/CdvPurchase.IError.md) \| [`GProduct`](CdvPurchase.GooglePlay.GProduct.md))[]\>
+▸ **loadProducts**(`products`): `Promise`<([`IError`](../interfaces/CdvPurchase.IError.md) \| [`GProduct`](CdvPurchase.GooglePlay.GProduct.md))[]\>
 
 Load product definitions from the platform.
 
@@ -353,7 +354,23 @@ Load product definitions from the platform.
 
 #### Implementation of
 
-[Adapter](../interfaces/CdvPurchase.Adapter.md).[load](../interfaces/CdvPurchase.Adapter.md#load)
+[Adapter](../interfaces/CdvPurchase.Adapter.md).[loadProducts](../interfaces/CdvPurchase.Adapter.md#loadproducts)
+
+___
+
+### loadReceipts
+
+▸ **loadReceipts**(): `Promise`<[`Receipt`](CdvPurchase.Receipt.md)[]\>
+
+Load the receipts
+
+#### Returns
+
+`Promise`<[`Receipt`](CdvPurchase.Receipt.md)[]\>
+
+#### Implementation of
+
+[Adapter](../interfaces/CdvPurchase.Adapter.md).[loadReceipts](../interfaces/CdvPurchase.Adapter.md#loadreceipts)
 
 ___
 

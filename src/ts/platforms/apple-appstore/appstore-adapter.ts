@@ -106,6 +106,7 @@ namespace CdvPurchase {
             pseudoReceipt: Receipt;
 
             get receipts(): Receipt[] {
+                if (!this.isSupported) return [];
                 return ((this._receipt ? [this._receipt] : []) as Receipt[])
                     .concat(this.pseudoReceipt ? this.pseudoReceipt : []);
             }
@@ -217,6 +218,7 @@ namespace CdvPurchase {
             private _receiptsUpdated() {
                 if (this._receipt) {
                     this.context.listener.receiptsUpdated(Platform.APPLE_APPSTORE, [this._receipt, this.pseudoReceipt]);
+                    this.context.listener.receiptsReady(Platform.APPLE_APPSTORE);
                 }
                 else {
                     this.context.listener.receiptsUpdated(Platform.APPLE_APPSTORE, [this.pseudoReceipt]);
@@ -327,13 +329,28 @@ namespace CdvPurchase {
                         },
                     }, async () => {
                         this.log.info('bridge.init done');
-                        setTimeout(() => this.initializeAppReceipt(() => this.receiptsUpdated()), 300);
                         await this.canMakePayments();
                         resolve(undefined);
                     }, (code: ErrorCode, message: string) => {
                         this.log.info('bridge.init failed: ' + code + ' - ' + message);
                         resolve(storeError(code, message));
                     });
+                });
+            }
+
+            loadReceipts(): Promise<Receipt[]> {
+                return new Promise((resolve) => {
+                    setTimeout(() => {
+                        this.initializeAppReceipt(() => {
+                            this.receiptsUpdated();
+                            if (this._receipt) {
+                               resolve([this._receipt, this.pseudoReceipt]);
+                            }
+                            else {
+                                resolve([this.pseudoReceipt]);
+                            }
+                        });
+                    }, 300);
                 });
             }
 
@@ -402,7 +419,7 @@ namespace CdvPurchase {
             /** Promisified loading of the AppStore receipt */
             private async loadAppStoreReceipt(): Promise<undefined | ApplicationReceipt> {
                 let resolved = false;
-                return new Promise(resolve => {
+                return new Promise<undefined | ApplicationReceipt>(resolve => {
                     if (this.bridge.appStoreReceipt?.appStoreReceipt) {
                         this.log.debug('using cached appstore receipt');
                         return resolve(this.bridge.appStoreReceipt);
@@ -423,6 +440,12 @@ namespace CdvPurchase {
                         if (!resolved) resolve(undefined);
                         resolved = true;
                     }, 5000);
+                }).then(result => {
+                    this.context.listener.receiptsReady(Platform.APPLE_APPSTORE);
+                    return result;
+                }).catch(reason => {
+                    this.context.listener.receiptsReady(Platform.APPLE_APPSTORE);
+                    return reason;
                 });
             }
 
@@ -467,7 +490,7 @@ namespace CdvPurchase {
                 });
             }
 
-            load(products: IRegisterProduct[]): Promise<(Product | IError)[]> {
+            loadProducts(products: IRegisterProduct[]): Promise<(Product | IError)[]> {
                 return new Promise(resolve => {
                     this.log.info('bridge.load');
                     this.bridge.load(
@@ -633,7 +656,7 @@ namespace CdvPurchase {
                     id: applicationReceipt.bundleIdentifier,
                     type: ProductType.APPLICATION,
                     // send all products and offers so validator get pricing information
-                    products: Object.values(this.validProducts).map(vp => new SKProduct(vp, vp, this.context.apiDecorators, { isEligible: () => true })),
+                    products: Utils.objectValues(this.validProducts).map(vp => new SKProduct(vp, vp, this.context.apiDecorators, { isEligible: () => true })),
                     transaction: {
                         type: 'ios-appstore',
                         id: transaction?.transactionId,
